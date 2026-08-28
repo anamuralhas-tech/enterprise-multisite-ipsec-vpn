@@ -289,6 +289,88 @@ The final test completed with **0% packet loss**, confirming that traffic betwee
 
 **Key lesson:** successful communication between the VPN peers does not prove successful IPsec authentication. IKE logs were required to distinguish a PSK mismatch from a transport or routing problem.
 
+### Incident 2 — Phase 1 Established but Phase 2 Misconfigured
+
+A second controlled failure was introduced by changing the remote network selector for the Lisbon-Porto Phase 2 association from the correct Porto network `192.168.20.0/24` to `192.168.30.0/24`.
+
+This scenario was designed to demonstrate that an established IKE session does not guarantee functional connectivity between the protected LANs.
+
+#### Symptom
+
+The Lisbon-Porto Phase 1 remained **Established**, but the Phase 2 association responsible for transporting Porto traffic was no longer operational.
+
+<p align="center">
+  <img src="assets/troubleshooting/phase2-selector-failure-state.png"
+       alt="IPsec Phase 1 established while Phase 2 contains an incorrect remote network selector"
+       width="95%">
+</p>
+
+The incorrect selector referenced `192.168.30.0/24` instead of the Porto LAN `192.168.20.0/24`.
+
+#### Functional Impact
+
+Although IKE negotiation remained active, traffic between Porto and Lisbon could not use the expected IPsec Security Association.
+
+<p align="center">
+  <img src="assets/troubleshooting/phase2-selector-ping-failure.png"
+       alt="Connectivity failure caused by an incorrect IPsec Phase 2 selector"
+       width="80%">
+</p>
+
+The connectivity test resulted in **100% packet loss**.
+
+This distinction is important: the VPN could appear partially healthy because Phase 1 was still established, while the actual protected traffic was unable to reach the remote LAN.
+
+#### Root Cause
+
+The Phase 2 remote network selector was configured as:
+
+`192.168.30.0/24`
+
+instead of the correct Porto network:
+
+`192.168.20.0/24`
+
+The Phase 1 Security Association therefore remained valid, but the Phase 2 traffic selector did not match the network that needed to be protected.
+
+#### Correction
+
+The remote network selector was restored to `192.168.20.0/24`.
+
+After renegotiation, the required Phase 2 Security Association returned to **Installed** state.
+
+<p align="center">
+  <img src="assets/troubleshooting/phase2-selector-recovery.png"
+       alt="Phase 2 Security Association restored after correcting the remote network selector"
+       width="95%">
+</p>
+
+#### Functional Validation
+
+Connectivity between the sites was tested again after the selector was corrected.
+
+<p align="center">
+  <img src="assets/troubleshooting/phase2-selector-connectivity-validation.png"
+       alt="Successful connectivity test after correcting the IPsec Phase 2 selector"
+       width="80%">
+</p>
+
+The final test completed with **0% packet loss**, confirming that protected traffic was again being transported correctly between the two LANs.
+
+#### Diagnostic Conclusion
+
+| Stage | Evidence |
+|---|---|
+| Initial condition | Phase 1 remained `Established` |
+| Symptom | Porto-Lisbon traffic failed |
+| Evidence | Phase 2 referenced the wrong remote LAN |
+| Root cause | Incorrect traffic selector |
+| Correction | Remote network restored to `192.168.20.0/24` |
+| Technical validation | Phase 2 returned to `Installed` |
+| Functional validation | Connectivity restored with 0% packet loss |
+
+**Key lesson:** an IPsec VPN showing Phase 1 as `Established` does not prove that application or even IP traffic can cross the tunnel. Phase 2 selectors and data-plane validation must be checked independently.
+
 ## Project Status
 
 **Completed laboratory implementation and validation.**
