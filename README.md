@@ -599,6 +599,102 @@ This confirmed that the client was again using the DNS infrastructure capable of
 
 **Key lesson:** successful IP connectivity does not prove correct DNS configuration. When internal services fail by hostname, the configured resolver and the DNS zone responsible for that namespace must be validated independently.
 
+### Incident 5 — Incorrect Default Gateway
+
+A fifth controlled failure was introduced by changing the default gateway configured on `CLIENTE-PORTO`.
+
+The correct gateway for the Porto network was `192.168.20.1`, but the client was deliberately configured to use `192.168.20.254`.
+
+The VPN and firewall remained operational, but the endpoint could no longer correctly forward traffic destined for remote networks.
+
+#### Misconfigured Default Gateway
+
+The client routing configuration showed the incorrect default gateway:
+
+`192.168.20.254`
+
+<p align="center">
+  <img src="assets/troubleshooting/gateway-misconfiguration-wrong-default-route.png"
+       alt="CLIENTE-PORTO configured with the incorrect default gateway 192.168.20.254"
+       width="80%">
+</p>
+
+This isolated the fault to the endpoint routing configuration rather than the IPsec infrastructure.
+
+#### Connectivity Failure
+
+Communication with the Lisbon server was then tested.
+
+<p align="center">
+  <img src="assets/troubleshooting/gateway-misconfiguration-connectivity-failure.png"
+       alt="Destination host unreachable caused by an incorrect client default gateway"
+       width="80%">
+</p>
+
+The client generated:
+
+`Destination host unreachable`
+
+This message was generated locally by `CLIENTE-PORTO`.
+
+It therefore did not represent a reply from the remote Lisbon server. It indicated that the local host could not correctly forward the packet toward the destination network.
+
+#### Root Cause
+
+The default gateway configured on `CLIENTE-PORTO` was incorrect.
+
+The client belonged to the `192.168.20.0/24` network and should have used the Porto pfSense firewall as its gateway:
+
+`192.168.20.1`
+
+Instead, the configured route pointed to:
+
+`192.168.20.254`
+
+As a result, traffic destined for networks outside the local subnet could not be routed correctly.
+
+#### Correction
+
+The default gateway was restored to:
+
+`192.168.20.1`
+
+<p align="center">
+  <img src="assets/troubleshooting/gateway-default-route-restored.png"
+       alt="CLIENTE-PORTO default gateway restored to 192.168.20.1"
+       width="80%">
+</p>
+
+The client was again configured to use the Porto firewall as its route toward remote networks.
+
+#### Functional Validation
+
+Connectivity with the Lisbon server was tested again after restoring the correct gateway.
+
+<p align="center">
+  <img src="assets/troubleshooting/gateway-connectivity-restored.png"
+       alt="Connectivity to SRV-LISBOA restored after correcting the default gateway"
+       width="80%">
+</p>
+
+The final ping to `SRV-LISBOA` completed with **0% packet loss**.
+
+This confirmed that routing from the Porto client toward the remote Lisbon network had been restored.
+
+#### Diagnostic Conclusion
+
+| Stage | Evidence |
+|---|---|
+| Initial condition | VPN and firewall remained operational |
+| Misconfiguration | Default gateway changed to `192.168.20.254` |
+| Symptom | Remote network became unreachable |
+| Evidence | Local `Destination host unreachable` message |
+| Root cause | Incorrect endpoint default route |
+| Correction | Gateway restored to `192.168.20.1` |
+| Functional validation | Ping to `SRV-LISBOA` restored with 0% packet loss |
+
+**Key lesson:** when VPN and firewall infrastructure are operational but one endpoint cannot reach remote networks, local routing must be validated before changing the tunnel configuration. A locally generated unreachable message is evidence that the failure may occur before traffic ever reaches the VPN gateway.
+
 ## Project Status
 
 **Completed laboratory implementation and validation.**
