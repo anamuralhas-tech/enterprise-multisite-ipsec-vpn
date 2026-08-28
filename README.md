@@ -96,6 +96,19 @@ From the Porto client, connectivity to the centralized MariaDB service in Lisbon
 
 ```sql
 SELECT * FROM techsolutions.equipamentos;
+```
+
+<p align="center">
+  <img src="assets/validation/mariadb-remote-query.png"
+       alt="Remote MariaDB query executed from the Porto branch"
+       width="90%">
+</p>
+
+The query successfully returned records from the database hosted in Lisbon.
+
+> **What this proves:** the remote client could establish a functional MariaDB session through the VPN and execute SQL against the centralized database.
+>
+> **What this does not prove by itself:** the availability of the other centralized services or the overall health of the VPN. DNS, IIS, SMB and Active Directory were validated independently.
 
 ## Key Outcomes
 
