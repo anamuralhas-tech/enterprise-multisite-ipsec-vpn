@@ -359,10 +359,36 @@ The actual laboratory work was completed across multiple sessions and cumulative
 
 ## Project Status
 
-**Completed laboratory implementation and validation.**
+**Completed and validated.**
 
-The final environment successfully demonstrated multi-site connectivity and remote access to centralized **Active Directory, DNS, IIS, MariaDB and SMB services**.
+The final laboratory state includes:
 
----
+- operational Lisbon-Porto and Lisbon-Faro IPsec tunnels;
+- four installed Phase 2 associations supporting branch and inter-branch traffic;
+- centralized Active Directory, DNS and DHCP services;
+- remotely validated IIS, MariaDB and SMB services;
+- functional Porto and Faro integration;
+- six documented troubleshooting incidents;
+- restored and validated Active Directory secure channel;
+- service-specific firewall policy using least-privilege principles;
+- rollback planning and technical cost estimation.
 
-**Note:** This project was developed in an authorized laboratory environment for training and portfolio purposes. Credentials and other sensitive configuration values are intentionally excluded from the public documentation.
+The final solution demonstrated that the proposed hub-and-spoke architecture can support centralized enterprise services across multiple sites while remaining diagnosable, auditable and extensible.
+
+## Repository Structure
+
+```text
+enterprise-multisite-ipsec-vpn/
+├── README.md
+├── incidents/
+│   ├── 01-ipsec-psk-authentication-failure.md
+│   ├── 02-phase2-selector-mismatch.md
+│   ├── 03-firewall-policy.md
+│   ├── 04-dns-misconfiguration.md
+│   ├── 05-default-gateway.md
+│   └── 06-ad-secure-channel.md
+└── assets/
+    ├── architecture/
+    ├── vpn/
+    ├── validation/
+    └── troubleshooting/
