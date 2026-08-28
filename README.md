@@ -315,6 +315,48 @@ A temporary diagnostic firewall permission confirmed the firewall as the failure
 
 [Read the complete Active Directory incident →](incidents/06-ad-secure-channel.md)
 
+## Operational Planning
+
+The laboratory was also treated as a controlled infrastructure change rather than only a configuration exercise.
+
+### Change Management and Rollback
+
+Before troubleshooting, a known-good snapshot was created for the critical virtual machines.
+
+The rollback strategy was:
+
+1. preserve the observed failure and collect diagnostic evidence;
+2. attempt a controlled configuration correction;
+3. validate the original symptom after the change;
+4. restore the known-good snapshot only if direct recovery was unsuccessful.
+
+The laboratory snapshot used for recovery was:
+
+`LAB_FUNCIONAL_ANTES_TROUBLESHOOTING`
+
+In a production environment, the equivalent process would include firewall configuration exports, server backups, a documented rollback plan, a defined maintenance window and formal change approval.
+
+### Technical Cost Estimation
+
+The project also included a professional-style estimate for implementing the proposed solution.
+
+| Component | Estimated Cost |
+|---|---:|
+| Lisbon-Porto engineering and implementation | €1,465 |
+| Faro extension | €675 |
+| Indirect costs and technical reserve | €564 |
+| **Total technical services** | **€2,704** |
+
+The estimate covers technical services and excludes equipment and VAT.
+
+Hardware was intentionally kept separate because a real deployment would require current validation of existing infrastructure, IPsec throughput, switching capacity, PoE requirements, redundancy, licensing and supplier pricing.
+
+### Academic vs. Professional Time
+
+The academic brief specified a reference duration of **10 hours**.
+
+The actual laboratory work was completed across multiple sessions and cumulative execution time was not formally tracked. The commercial estimate therefore represents a professional implementation model rather than a timesheet of the academic work.
+
 ## Project Status
 
 **Completed laboratory implementation and validation.**
