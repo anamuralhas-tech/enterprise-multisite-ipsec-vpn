@@ -92,31 +92,70 @@ The laboratory was designed to validate dependencies and service behavior rather
 
 ## IPsec Design & Final State
 
-The VPN architecture uses **Lisbon as the central hub**, with Site-to-Site IPsec tunnels connecting the Porto and Faro branches to headquarters.
+Lisbon operates as the IPsec hub, with independent site-to-site tunnels to Porto and Faro.
 
-The implementation uses:
+### Phase 1
 
-- **IKEv2** for Phase 1 negotiation
-- Pre-shared key authentication
-- AES-256 encryption
-- SHA-256 integrity
-- Dedicated Phase 2 selectors for each protected LAN
-- Additional Phase 2 selectors for **Porto ↔ Faro inter-branch transit through Lisbon**
+Both tunnels use the same IKE security profile:
+
+| Parameter | Configuration |
+|---|---|
+| IKE version | IKEv2 |
+| Authentication | Pre-Shared Key |
+| Encryption | AES-CBC 256-bit |
+| Integrity | HMAC-SHA2-256 |
+| PRF | HMAC-SHA2-256 |
+| Diffie-Hellman group | MODP 2048 / Group 14 |
+
+The pre-shared keys are intentionally excluded from the repository.
+
+VPN peers:
+
+- Lisbon ↔ Porto: `192.168.136.10` ↔ `192.168.136.20`
+- Lisbon ↔ Faro: `192.168.136.10` ↔ `192.168.136.30`
+
+### Phase 2 Traffic Selectors
+
+Four Phase 2 associations were implemented to support both direct site-to-hub communication and Porto-Faro transit through Lisbon.
+
+| Phase 2 | Local Network | Remote Network | Purpose |
+|---|---|---|---|
+| `LAN_LISBOA_PARA_LAN_PORTO` | `192.168.10.0/24` | `192.168.20.0/24` | Lisbon-Porto traffic |
+| `TRANSITO_FARO_PARA_PORTO` | `192.168.30.0/24` | `192.168.20.0/24` | Faro-Porto transit |
+| `LAN_LISBOA_PARA_LAN_FARO` | `192.168.10.0/24` | `192.168.30.0/24` | Lisbon-Faro traffic |
+| `TRANSITO_PORTO_PARA_FARO` | `192.168.20.0/24` | `192.168.30.0/24` | Porto-Faro transit |
+
+This preserves the hub-and-spoke architecture while allowing the two branches to communicate through Lisbon without requiring a direct Porto-Faro IPsec tunnel.
+
+### Final VPN State
 
 <p align="center">
   <img src="assets/vpn/ipsec-final-status.png"
-       alt="Final pfSense IPsec status showing Lisbon-Porto and Lisbon-Faro tunnels"
-       width="100%">
+       alt="Final pfSense IPsec status showing both tunnels established and Phase 2 associations installed"
+       width="95%">
 </p>
 
-The final pfSense status shows both Phase 1 connections in **Established** state and the required Phase 2 Security Associations in **Installed** state.
+At final validation:
 
-Traffic counters provide additional evidence that the tunnels were actively transporting traffic during validation.
+- Lisbon-Porto Phase 1 was **Established**;
+- Lisbon-Faro Phase 1 was **Established**;
+- all four required Phase 2 associations were **Installed**;
+- traffic counters showed packet and byte activity across the tunnels.
 
-> **What this proves:** IPsec negotiation succeeded and the required Security Associations were installed for the three-site topology.
->
-> **What this does not prove by itself:** that DNS, HTTP, SMB, MariaDB or Active Directory are operational across the VPN. Those services were validated separately at the application layer.
->
+`Established` confirms successful IKE negotiation between the VPN peers.
+
+`Installed` confirms that the corresponding IPsec traffic Security Associations are available for the configured protected networks.
+
+Traffic counters provide additional evidence that the tunnels were not merely configured but were actively carrying traffic.
+
+### Evidence Boundary
+
+The IPsec status proves tunnel negotiation and Security Association state.
+
+It does **not**, by itself, prove that DNS, web, database, file-sharing or Active Directory services are functional across the VPN.
+
+Those services were validated independently at the application layer.
+
 > ## Application-Layer Validation
 
 Establishing an IPsec tunnel was not considered sufficient proof that the environment was operational. Business services were validated separately from the remote branches.
