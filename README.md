@@ -156,85 +156,87 @@ It does **not**, by itself, prove that DNS, web, database, file-sharing or Activ
 
 Those services were validated independently at the application layer.
 
-> ## Application-Layer Validation
+## Application-Layer Validation
 
-Establishing an IPsec tunnel was not considered sufficient proof that the environment was operational. Business services were validated separately from the remote branches.
+VPN status alone was not treated as proof of service availability.
 
-### MariaDB
+After validating the IPsec layer, the centralized services hosted in Lisbon were tested independently from remote clients. Selected evidence from `CLIENTE-PORTO` is shown below; final validation also confirmed service access from `CLIENTE-FARO`.
 
-From the Porto client, connectivity to the centralized MariaDB service in Lisbon was validated at the application layer by executing a real SQL query:
+| Service | Validation Method | Result |
+|---|---|---|
+| DNS | Resolve `portal.techsolutions.local` using internal DNS | Passed |
+| IIS | Open internal portal by DNS name | Passed |
+| MariaDB | TCP `3306` + real SQL query | Passed |
+| SMB | TCP `445` + access shared folder | Passed |
+| Active Directory | `Test-ComputerSecureChannel` | `True` |
 
-```sql
-SELECT * FROM techsolutions.equipamentos;
-```
+### MariaDB — Remote SQL Query
+
+A real database query was executed remotely against the MariaDB service on `SRV-LISBOA`.
 
 <p align="center">
   <img src="assets/validation/mariadb-remote-query.png"
-       alt="Remote MariaDB query executed from the Porto branch"
+       alt="Successful MariaDB query executed remotely from Porto"
        width="90%">
 </p>
 
-The query successfully returned records from the database hosted in Lisbon.
+This validates more than TCP `3306` reachability: the client established an application session and successfully retrieved data from the database.
 
-> **What this proves:** the remote client could establish a functional MariaDB session through the VPN and execute SQL against the centralized database.
->
-> **What this does not prove by itself:** the availability of the other centralized services or the overall health of the VPN. DNS, IIS, SMB and Active Directory were validated independently.
+### IIS and Internal DNS
 
-### IIS via Internal DNS
-
-The internal web service hosted in Lisbon was validated from the Porto branch using the corporate DNS name:
+The internal IIS portal was accessed using:
 
 `http://portal.techsolutions.local`
 
 <p align="center">
   <img src="assets/validation/iis-internal-dns-validation.png"
-       alt="IIS accessed from the Porto branch using the internal DNS name portal.techsolutions.local"
+       alt="IIS internal portal successfully accessed using corporate DNS"
        width="90%">
 </p>
 
-Loading the IIS page by hostname validates more than basic HTTP connectivity: the remote client must first resolve the internal DNS name and then successfully reach the web service through the VPN and firewall policy.
+Successful page loading by hostname jointly validates internal DNS resolution, VPN transport, firewall authorization and HTTP service availability.
 
-> **What this proves:** internal DNS resolution, VPN routing, firewall access and IIS availability were functional for this request.
->
-> **What this does not prove by itself:** HTTPS security or certificate validation. This laboratory test intentionally used HTTP.
->
-> ### SMB File Service
+The browser's **Not secure** indication is expected because this proof of concept uses HTTP rather than HTTPS.
 
-The centralized SMB file service hosted in Lisbon was validated from the Porto branch by accessing the corporate share directly:
+### SMB File Sharing
+
+The centralized share was accessed from the remote client at:
 
 `\\192.168.10.82\PartilhaTechSolutions`
 
 <p align="center">
   <img src="assets/validation/smb-remote-share-validation.png"
-       alt="SMB share hosted in Lisbon accessed from the Porto branch"
+       alt="Remote access to the centralized SMB share in Lisbon"
        width="90%">
 </p>
 
-The remote client successfully opened the share and accessed the `LEIA-ME` file.
-
-> **What this proves:** SMB was usable at the application level across the VPN, not merely reachable on TCP port 445.
->
-> **What this does not prove by itself:** that domain authentication and the computer trust relationship were healthy. Active Directory was validated separately.
+This confirms functional SMB access to the centralized file service rather than port reachability alone.
 
 ### Active Directory Secure Channel
 
-The Porto client was also validated as an active member of the centralized Active Directory domain.
+The machine-domain relationship was validated with:
 
-```powershell
-Test-ComputerSecureChannel -Verbose
-```
+`Test-ComputerSecureChannel -Verbose`
 
 <p align="center">
   <img src="assets/validation/ad-secure-channel-validation.png"
-       alt="Successful Active Directory secure channel validation from the Porto client"
+       alt="Active Directory secure channel validation returning True"
        width="90%">
 </p>
 
-The command returned `True`, confirming that the secure channel between `CLIENTE-PORTO` and `techsolutions.local` was in good condition.
+The final result returned:
 
-> **What this proves:** the remote Windows client maintained a functional trust relationship with the Active Directory domain across the multi-site infrastructure.
->
-> **What this does not prove by itself:** that every Active Directory-dependent protocol or service is available under every firewall condition. The firewall dependencies were investigated separately during troubleshooting.
+`True`
+
+confirming a healthy secure channel between the remote domain client and `techsolutions.local`.
+
+### Validation Principle
+
+Each layer was validated with the strongest practical test available:
+
+**Network reachability → Port availability → Name resolution → Application access → Domain trust**
+
+This avoided treating a successful ping or an established VPN tunnel as sufficient evidence that business services were operational.
 
 ## Key Outcomes
 
