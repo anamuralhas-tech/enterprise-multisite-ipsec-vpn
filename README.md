@@ -695,6 +695,156 @@ This confirmed that routing from the Porto client toward the remote Lisbon netwo
 
 **Key lesson:** when VPN and firewall infrastructure are operational but one endpoint cannot reach remote networks, local routing must be validated before changing the tunnel configuration. A locally generated unreachable message is evidence that the failure may occur before traffic ever reaches the VPN gateway.
 
+### Additional Incident — Active Directory Secure Channel Failure
+
+During final validation, an additional problem was discovered that had not been part of the five planned troubleshooting scenarios.
+
+`CLIENTE-PORTO` still appeared to belong to the `techsolutions.local` domain, but its secure channel with Active Directory was no longer operational.
+
+Unlike the previous incidents, this failure was not intentionally introduced. It therefore became a real troubleshooting case within the laboratory.
+
+#### Initial Symptom
+
+The domain trust relationship was tested with:
+
+`Test-ComputerSecureChannel -Verbose`
+
+<p align="center">
+  <img src="assets/troubleshooting/ad-secure-channel-broken.png"
+       alt="Broken Active Directory secure channel between CLIENTE-PORTO and techsolutions.local"
+       width="80%">
+</p>
+
+The command returned:
+
+`False`
+
+This confirmed that the secure channel between `CLIENTE-PORTO` and the domain was not operational.
+
+#### Network Layer Investigation
+
+Basic connectivity to `SRV-LISBOA` was still available through ICMP.
+
+The investigation therefore moved beyond simple IP reachability and tested individual Active Directory dependencies.
+
+Several required TCP services were initially unavailable:
+
+- LDAP — TCP `389`
+- Kerberos — TCP `88`
+- RPC Endpoint Mapper — TCP `135`
+
+A temporary diagnostic firewall rule, restricted to traffic from `CLIENTE-PORTO` to `SRV-LISBOA`, was used to determine whether the firewall policy was responsible.
+
+After applying the temporary diagnostic permission, the same service tests began succeeding.
+
+#### LDAP Validation
+
+<p align="center">
+  <img src="assets/troubleshooting/ad-ldap-389-reachable.png"
+       alt="LDAP TCP port 389 reachable after temporary firewall adjustment"
+       width="80%">
+</p>
+
+TCP port `389` became reachable, confirming that LDAP communication with the domain controller was no longer being blocked.
+
+#### Kerberos Validation
+
+<p align="center">
+  <img src="assets/troubleshooting/ad-kerberos-88-reachable.png"
+       alt="Kerberos TCP port 88 reachable after firewall adjustment"
+       width="80%">
+</p>
+
+TCP port `88` also became reachable, confirming restoration of the tested Kerberos flow.
+
+#### RPC Validation
+
+<p align="center">
+  <img src="assets/troubleshooting/ad-rpc-135-reachable.png"
+       alt="RPC Endpoint Mapper TCP port 135 reachable after firewall adjustment"
+       width="80%">
+</p>
+
+TCP port `135` became reachable as well.
+
+The combination of these results provided strong evidence that the firewall policy, rather than the VPN tunnel itself, was preventing the Active Directory communication required by the client.
+
+#### Root Cause
+
+The IPsec VPN was functional, but the firewall policy did not yet permit all traffic required for Active Directory communication between the Porto network and `SRV-LISBOA`.
+
+The client could therefore reach the remote network while still being unable to maintain a valid domain secure channel.
+
+#### Permanent Correction
+
+After confirming the cause with the temporary diagnostic rule, dedicated Active Directory aliases and permanent TCP/UDP firewall rules were created.
+
+The destination was restricted to `SRV-LISBOA`, avoiding a broad permanent `Any` policy.
+
+The secure channel was then repaired using:
+
+`Test-ComputerSecureChannel -Repair`
+
+<p align="center">
+  <img src="assets/troubleshooting/ad-secure-channel-repair-success.png"
+       alt="Active Directory secure channel successfully repaired"
+       width="80%">
+</p>
+
+The repair returned:
+
+`True`
+
+This indicated that the trust relationship had been successfully re-established.
+
+#### Final Least-Privilege Firewall Policy
+
+The temporary broad diagnostic permission was removed after the cause had been confirmed.
+
+The final firewall configuration used dedicated Active Directory rules and aliases instead.
+
+<p align="center">
+  <img src="assets/troubleshooting/ad-final-least-privilege-firewall-policy.png"
+       alt="Final least-privilege Active Directory firewall policy across the IPsec VPN"
+       width="95%">
+</p>
+
+This preserved the required domain functionality while keeping the allowed traffic explicitly scoped.
+
+#### Final Secure Channel Validation
+
+The secure channel was tested again after removing the temporary diagnostic permission.
+
+<p align="center">
+  <img src="assets/troubleshooting/ad-secure-channel-final-validation.png"
+       alt="Final Active Directory secure channel validation after applying permanent firewall rules"
+       width="80%">
+</p>
+
+`Test-ComputerSecureChannel` returned:
+
+`True`
+
+and reported that the secure channel was in **good condition**.
+
+This final test demonstrated that the permanent firewall policy was sufficient and that the recovery did not depend on the temporary diagnostic rule.
+
+#### Diagnostic Conclusion
+
+| Stage | Evidence |
+|---|---|
+| Initial symptom | `Test-ComputerSecureChannel` returned `False` |
+| Basic connectivity | ICMP to `SRV-LISBOA` remained functional |
+| Service evidence | LDAP 389, Kerberos 88 and RPC 135 were blocked |
+| Diagnostic test | Temporary restricted firewall permission made the port tests succeed |
+| Root cause | Required Active Directory traffic was blocked by the firewall policy |
+| Permanent correction | Dedicated AD TCP/UDP aliases and rules created |
+| Repair | `Test-ComputerSecureChannel -Repair` returned `True` |
+| Security cleanup | Temporary broad diagnostic rule removed |
+| Final validation | Secure channel remained `True` and in good condition |
+
+**Key lesson:** successful VPN connectivity and even successful ICMP reachability do not prove that Active Directory is operational across a site-to-site tunnel. Domain functionality depends on multiple service-specific flows, and firewall policy must support those dependencies without relying on unnecessarily broad permanent rules.
+
 ## Project Status
 
 **Completed laboratory implementation and validation.**
