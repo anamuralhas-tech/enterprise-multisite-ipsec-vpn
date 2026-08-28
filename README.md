@@ -25,43 +25,70 @@ Validation was performed progressively from network connectivity to application-
 
 ## Project Scope
 
-The laboratory integrates:
+The project covers the design, implementation and validation of a three-site enterprise infrastructure with centralized services and secure inter-site connectivity.
 
-- pfSense firewalls and gateways
-- IKEv2 / IPsec Site-to-Site VPN
-- Hub-and-spoke multi-site connectivity
-- Windows Server
-- Active Directory Domain Services
-- DNS
-- DHCP
-- IIS
-- MariaDB
-- SMB file sharing
-- Windows client endpoints
-- Firewall policy and least-privilege access
-- Structured troubleshooting
-- Backup and rollback planning
-- Technical intervention cost estimation
+Core components include:
+
+- pfSense firewalls at Lisbon, Porto and Faro;
+- IKEv2 site-to-site IPsec;
+- hub-and-spoke topology with Lisbon as the central hub;
+- Porto-Faro transit through Lisbon;
+- Windows Server infrastructure;
+- Active Directory Domain Services;
+- internal DNS and DHCP;
+- IIS internal web service;
+- MariaDB database service;
+- SMB file sharing;
+- Windows domain clients;
+- service-specific firewall policies;
+- controlled troubleshooting and root-cause validation;
+- rollback and change-management planning;
+- technical cost estimation.
 
 ## Architecture
 
-The enterprise scenario represents **41 users across three locations**:
+### Site Roles
 
 | Location | Role | Users |
 |---|---|---:|
-| Lisbon | Headquarters and central services hub | 25 |
-| Porto | Remote branch | 10 |
-| Faro | Remote multifunction branch | 6 |
+| Lisbon | Headquarters, VPN hub and centralized services | 25 |
+| Porto | Remote branch using centralized Lisbon services | 10 |
+| Faro | Remote branch with inter-site communication through Lisbon | 6 |
+| **Total** |  | **41** |
+
+Lisbon acts as the infrastructure core. Active Directory, DNS, DHCP, IIS, MariaDB and SMB are centralized on `SRV-LISBOA`, while Porto and Faro consume those services through the IPsec infrastructure.
+
+The enterprise design and the laboratory implementation are deliberately separated: the enterprise layer represents the proposed business architecture, while the VMware environment reproduces the network and service dependencies required to validate the design.
 
 ### Laboratory Networks
 
-| Site | LAN | Gateway |
+| Site / Function | Network | Gateway |
 |---|---|---|
-| Lisbon | `192.168.10.0/24` | `192.168.10.1` |
-| Porto | `192.168.20.0/24` | `192.168.20.1` |
-| Faro | `192.168.30.0/24` | `192.168.30.1` |
+| Lisbon LAN | `192.168.10.0/24` | `192.168.10.1` |
+| Porto LAN | `192.168.20.0/24` | `192.168.20.1` |
+| Faro LAN | `192.168.30.0/24` | `192.168.30.1` |
+| VMware WAN transport | `192.168.136.0/24` | Simulated transport network |
 
-A dedicated VMware network was used as the simulated WAN transport between the three pfSense firewalls.
+The pfSense WAN interfaces use stable laboratory addresses:
+
+- Lisbon: `192.168.136.10`
+- Porto: `192.168.136.20`
+- Faro: `192.168.136.30`
+
+The `192.168.136.0/24` network is not an internal TechSolutions LAN. It represents the simulated WAN transport used between the VPN peers.
+
+### Centralized Services
+
+| Service | Laboratory Implementation |
+|---|---|
+| Active Directory | `techsolutions.local` on `SRV-LISBOA` |
+| DNS | Internal DNS on `192.168.10.82` |
+| DHCP | Centralized Windows DHCP service |
+| IIS | `http://portal.techsolutions.local` |
+| MariaDB | Database service on TCP `3306` |
+| SMB | `\\192.168.10.82\PartilhaTechSolutions` |
+
+The laboratory was designed to validate dependencies and service behavior rather than reproduce every physical device from the enterprise reference architecture.
 
 ## IPsec Design & Final State
 
