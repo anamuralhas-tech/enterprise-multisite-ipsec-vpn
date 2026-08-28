@@ -1,23 +1,27 @@
 # Secure Multi-Site Enterprise VPN
 
-> Multi-site enterprise infrastructure lab integrating pfSense IPsec, Windows Server, Active Directory and centralized business services across three locations.
+**Enterprise network infrastructure lab integrating pfSense IPsec, Windows Server, Active Directory and centralized services across three geographically separated sites.**
 
 <p align="center">
   <img src="assets/architecture/enterprise-multisite-topology.png"
-       alt="Conceptual multi-site enterprise network topology"
+       alt="TechSolutions multi-site enterprise network topology"
        width="100%">
 </p>
 
 ## Overview
 
-This project designs, implements and validates a secure multi-site network for a fictional organization with a headquarters in Lisbon and branch offices in Porto and Faro.
+This project designs and validates a secure multi-site infrastructure for a fictional 41-user organization distributed across Lisbon, Porto and Faro.
 
-The solution was developed in two complementary layers:
+Lisbon operates as the central site and IPsec hub, hosting the shared infrastructure services used by the remote branches. Porto and Faro connect securely to Lisbon through site-to-site IPsec tunnels, with controlled inter-site transit through the central firewall.
 
-- an **enterprise reference architecture**, covering segmentation, addressing, access policies, services and infrastructure requirements;
-- a **functional VMware laboratory**, used to implement and validate the critical network and service dependencies of the proposed design.
+The project combines two complementary perspectives:
 
-Lisbon operates as the central hub and hosts the corporate services. Porto and Faro connect to headquarters through **pfSense IPsec Site-to-Site VPNs**, with inter-branch communication routed through Lisbon using a hub-and-spoke topology.
+- an **enterprise infrastructure design**, covering topology, addressing, security policy and service architecture;
+- a **functional VMware laboratory**, used to implement, test, troubleshoot and validate the proposed solution.
+
+The laboratory integrates pfSense firewalls, Windows Server, Active Directory Domain Services, DNS, DHCP, IIS, MariaDB and SMB services.
+
+Validation was performed progressively from network connectivity to application-layer functionality. Controlled faults were then introduced to test an evidence-driven troubleshooting methodology, followed by an additional real Active Directory secure channel incident discovered during final validation.
 
 ## Project Scope
 
