@@ -59,6 +59,33 @@ The enterprise scenario represents **41 users across three locations**:
 
 A dedicated VMware network was used as the simulated WAN transport between the three pfSense firewalls.
 
+## IPsec Design & Final State
+
+The VPN architecture uses **Lisbon as the central hub**, with Site-to-Site IPsec tunnels connecting the Porto and Faro branches to headquarters.
+
+The implementation uses:
+
+- **IKEv2** for Phase 1 negotiation
+- Pre-shared key authentication
+- AES-256 encryption
+- SHA-256 integrity
+- Dedicated Phase 2 selectors for each protected LAN
+- Additional Phase 2 selectors for **Porto ↔ Faro inter-branch transit through Lisbon**
+
+<p align="center">
+  <img src="assets/vpn/ipsec-final-status.png"
+       alt="Final pfSense IPsec status showing Lisbon-Porto and Lisbon-Faro tunnels"
+       width="100%">
+</p>
+
+The final pfSense status shows both Phase 1 connections in **Established** state and the required Phase 2 Security Associations in **Installed** state.
+
+Traffic counters provide additional evidence that the tunnels were actively transporting traffic during validation.
+
+> **What this proves:** IPsec negotiation succeeded and the required Security Associations were installed for the three-site topology.
+>
+> **What this does not prove by itself:** that DNS, HTTP, SMB, MariaDB or Active Directory are operational across the VPN. Those services were validated separately at the application layer.
+
 ## Key Outcomes
 
 - Established IPsec connectivity between **Lisbon ↔ Porto**
