@@ -501,6 +501,104 @@ The SMB service became reachable again, confirming that the required file-servic
 
 **Key lesson:** an established IPsec tunnel proves that the VPN control plane is operational, but it does not prove that required business traffic is authorized. Firewall policy and individual application services must be validated independently.
 
+### Incident 4 — Incorrect DNS Configuration
+
+A fourth controlled failure was introduced by changing the DNS server configured on `CLIENTE-PORTO` from the corporate DNS service to the public resolver `8.8.8.8`.
+
+The client retained network connectivity, but internal corporate names could no longer be resolved because the public DNS service had no knowledge of the private `techsolutions.local` zone.
+
+#### Misconfigured Client
+
+The Porto client was deliberately configured to use:
+
+`8.8.8.8`
+
+as its DNS server.
+
+<p align="center">
+  <img src="assets/troubleshooting/dns-misconfiguration-public-dns.png"
+       alt="CLIENTE-PORTO deliberately configured to use public DNS server 8.8.8.8"
+       width="80%">
+</p>
+
+This created a realistic failure condition in which IP connectivity could still exist while access to internally published services by hostname failed.
+
+#### Resolution Failure
+
+The internal hostname was then queried using the public DNS configuration.
+
+<p align="center">
+  <img src="assets/troubleshooting/dns-public-server-internal-name-failure.png"
+       alt="Public DNS returning NXDOMAIN for the private techsolutions.local zone"
+       width="80%">
+</p>
+
+The query for:
+
+`portal.techsolutions.local`
+
+returned **Non-existent domain** through `dns.google`.
+
+The result showed that the DNS server itself was responding, but it did not contain the private corporate zone required to resolve the internal hostname.
+
+#### Root Cause
+
+The client was using a public DNS resolver instead of the centralized corporate DNS server.
+
+Public DNS services can resolve Internet namespaces, but the private `techsolutions.local` zone exists only within the laboratory infrastructure.
+
+The correct corporate DNS server was:
+
+`192.168.10.82`
+
+#### Correction
+
+The DNS configuration on `CLIENTE-PORTO` was restored to:
+
+`192.168.10.82`
+
+<p align="center">
+  <img src="assets/troubleshooting/dns-corporate-server-restored.png"
+       alt="CLIENTE-PORTO restored to the corporate DNS server 192.168.10.82"
+       width="80%">
+</p>
+
+The local DNS cache was then cleared before repeating the resolution test.
+
+#### Functional Validation
+
+The internal hostname was queried again after restoring the corporate DNS configuration.
+
+<p align="center">
+  <img src="assets/troubleshooting/dns-internal-resolution-restored.png"
+       alt="Internal DNS resolution successfully restored after correcting the client configuration"
+       width="80%">
+</p>
+
+The hostname:
+
+`portal.techsolutions.local`
+
+successfully resolved to:
+
+`192.168.10.82`
+
+This confirmed that the client was again using the DNS infrastructure capable of resolving the private corporate zone.
+
+#### Diagnostic Conclusion
+
+| Stage | Evidence |
+|---|---|
+| Initial condition | Client DNS changed to `8.8.8.8` |
+| Symptom | Internal hostname could not be resolved |
+| Evidence | `dns.google` returned Non-existent domain |
+| Root cause | Public DNS did not contain the private `techsolutions.local` zone |
+| Correction | Corporate DNS `192.168.10.82` restored |
+| Additional action | Local DNS cache cleared |
+| Functional validation | `portal.techsolutions.local` resolved to `192.168.10.82` |
+
+**Key lesson:** successful IP connectivity does not prove correct DNS configuration. When internal services fail by hostname, the configured resolver and the DNS zone responsible for that namespace must be validated independently.
+
 ## Project Status
 
 **Completed laboratory implementation and validation.**
