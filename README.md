@@ -109,6 +109,24 @@ The query successfully returned records from the database hosted in Lisbon.
 > **What this proves:** the remote client could establish a functional MariaDB session through the VPN and execute SQL against the centralized database.
 >
 > **What this does not prove by itself:** the availability of the other centralized services or the overall health of the VPN. DNS, IIS, SMB and Active Directory were validated independently.
+>
+### IIS via Internal DNS
+
+The internal web service hosted in Lisbon was validated from the Porto branch using the corporate DNS name:
+
+`http://portal.techsolutions.local`
+
+<p align="center">
+  <img src="assets/validation/iis-internal-dns-validation.png"
+       alt="IIS accessed from the Porto branch using the internal DNS name portal.techsolutions.local"
+       width="90%">
+</p>
+
+Loading the IIS page by hostname validates more than basic HTTP connectivity: the remote client must first resolve the internal DNS name and then successfully reach the web service through the VPN and firewall policy.
+
+> **What this proves:** internal DNS resolution, VPN routing, firewall access and IIS availability were functional for this request.
+>
+> **What this does not prove by itself:** HTTPS security or certificate validation. This laboratory test intentionally used HTTP.
 
 ## Key Outcomes
 
