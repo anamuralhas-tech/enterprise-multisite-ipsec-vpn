@@ -371,6 +371,136 @@ The final test completed with **0% packet loss**, confirming that protected traf
 
 **Key lesson:** an IPsec VPN showing Phase 1 as `Established` does not prove that application or even IP traffic can cross the tunnel. Phase 2 selectors and data-plane validation must be checked independently.
 
+### Incident 3 — Incomplete Firewall Policy
+
+A third controlled failure was introduced by reducing the permissions allowed between the Porto and Lisbon networks.
+
+The IPsec VPN remained established, but the firewall policy did not permit all required traffic. ICMP, DNS and SMB became unavailable even though the tunnel itself was operational.
+
+This scenario demonstrates that VPN establishment and firewall authorization are independent layers of connectivity.
+
+#### Symptom 1 — ICMP Failure
+
+The Porto client could no longer receive ICMP replies from the Lisbon network.
+
+<p align="center">
+  <img src="assets/troubleshooting/firewall-policy-icmp-failure.png"
+       alt="ICMP connectivity failure caused by an incomplete IPsec firewall policy"
+       width="80%">
+</p>
+
+The test resulted in **100% packet loss**.
+
+The VPN being established therefore did not prove that traffic was authorized through the firewall.
+
+#### Symptom 2 — DNS Timeout
+
+Internal DNS queries from Porto also failed.
+
+<p align="center">
+  <img src="assets/troubleshooting/firewall-policy-dns-timeout.png"
+       alt="DNS timeout caused by an incomplete firewall policy"
+       width="80%">
+</p>
+
+Without the required DNS permission, the Porto client could not resolve internal corporate names.
+
+#### Symptom 3 — SMB Unavailable
+
+The file service was independently tested using TCP port 445.
+
+<p align="center">
+  <img src="assets/troubleshooting/firewall-policy-smb-445-failure.png"
+       alt="SMB TCP port 445 inaccessible because of the firewall policy"
+       width="80%">
+</p>
+
+`Test-NetConnection` confirmed that TCP port `445` was not reachable from Porto.
+
+The combined evidence showed that the problem was broader than ICMP and affected multiple services crossing the VPN.
+
+#### Root Cause
+
+The IPsec firewall policy contained insufficient permissions for the traffic required between Porto and Lisbon.
+
+The VPN Security Associations could therefore remain active while the firewall independently blocked legitimate inter-site traffic.
+
+#### Correction
+
+The firewall policy was rebuilt using explicit rules identified by protocol and service.
+
+Specific permissions were created for ICMP, DNS and SMB. Additional HTTP and MariaDB permissions were later added to support complete application-layer validation.
+
+A broad generic `Any` rule was not used as the final policy.
+
+<p align="center">
+  <img src="assets/troubleshooting/firewall-policy-corrected-rules.png"
+       alt="Corrected pfSense IPsec firewall rules separated by protocol and service"
+       width="95%">
+</p>
+
+This approach made the permitted traffic easier to audit and aligned the configuration with a least-privilege model.
+
+#### ICMP Validation
+
+ICMP connectivity was tested again after applying the corrected rules.
+
+<p align="center">
+  <img src="assets/troubleshooting/firewall-policy-icmp-recovery.png"
+       alt="ICMP connectivity restored after correcting the firewall policy"
+       width="80%">
+</p>
+
+The ping completed with **0% packet loss**.
+
+#### DNS Validation
+
+Internal DNS resolution was then tested independently.
+
+<p align="center">
+  <img src="assets/troubleshooting/firewall-policy-dns-recovery.png"
+       alt="Internal DNS resolution restored after correcting the firewall policy"
+       width="80%">
+</p>
+
+The internal hostname:
+
+`portal.techsolutions.local`
+
+successfully resolved to:
+
+`192.168.10.82`
+
+This confirmed that DNS traffic between Porto and the centralized Lisbon DNS service was again permitted.
+
+#### SMB Validation
+
+Finally, TCP port 445 was retested from Porto.
+
+<p align="center">
+  <img src="assets/troubleshooting/firewall-policy-smb-recovery.png"
+       alt="SMB TCP port 445 reachable after correcting the firewall policy"
+       width="80%">
+</p>
+
+The SMB service became reachable again, confirming that the required file-service traffic was allowed through the IPsec firewall policy.
+
+#### Diagnostic Conclusion
+
+| Stage | Evidence |
+|---|---|
+| Initial condition | IPsec VPN remained established |
+| ICMP symptom | 100% packet loss |
+| DNS symptom | Internal DNS queries timed out |
+| SMB symptom | TCP 445 was unreachable |
+| Root cause | Incomplete firewall policy |
+| Correction | Explicit service-specific firewall rules |
+| ICMP validation | Ping restored with 0% packet loss |
+| DNS validation | `portal.techsolutions.local` resolved to `192.168.10.82` |
+| SMB validation | TCP 445 became reachable again |
+
+**Key lesson:** an established IPsec tunnel proves that the VPN control plane is operational, but it does not prove that required business traffic is authorized. Firewall policy and individual application services must be validated independently.
+
 ## Project Status
 
 **Completed laboratory implementation and validation.**
