@@ -240,28 +240,38 @@ This avoided treating a successful ping or an established VPN tunnel as sufficie
 
 ## Key Outcomes
 
-- Established IPsec connectivity between **Lisbon ↔ Porto**
-- Established IPsec connectivity between **Lisbon ↔ Faro**
-- Implemented **Porto ↔ Faro transit through Lisbon**
-- Centralized identity and network services in Lisbon
-- Joined remote Windows clients to the corporate Active Directory domain
-- Validated internal DNS resolution across the VPN
-- Validated IIS access using an internal DNS name
-- Executed real MariaDB queries from a remote branch
-- Accessed SMB resources across the VPN
-- Applied service-specific firewall rules instead of unrestricted access
-- Diagnosed and corrected multiple controlled network failures
-- Repaired an additional Active Directory secure-channel failure
-- Defined rollback and change-management procedures
-- Produced a technical cost estimate for the intervention
+The final laboratory demonstrated the complete multi-site service path rather than VPN connectivity alone.
 
-## Validation Approach
+| Area | Final Result |
+|---|---|
+| Multi-site topology | Lisbon, Porto and Faro implemented |
+| Virtual laboratory | Six primary VMware virtual machines |
+| Lisbon-Porto VPN | Operational |
+| Lisbon-Faro VPN | Operational |
+| Porto-Faro communication | Validated through Lisbon |
+| IPsec Phase 2 | Four required associations installed |
+| Active Directory | Centralized and operational |
+| DNS / DHCP | Implemented on `SRV-LISBOA` |
+| IIS / MariaDB / SMB | Remotely validated |
+| Controlled incidents | Five diagnosed, corrected and retested |
+| Additional AD incident | Root cause identified and secure channel restored |
+| Firewall policy | Refined toward service-specific least privilege |
+| Recovery planning | VMware rollback snapshots maintained |
 
-Validation was performed progressively by layer:
+### Engineering Approach
 
-**Endpoint configuration → Local gateway → IP connectivity → Routing → VPN → Firewall → DNS → Application service**
+The project was structured around several operational principles:
 
-This approach makes it possible to distinguish between a local endpoint problem, an IPsec failure, a firewall policy issue and an application-layer failure.
+- distinguish the **proposed enterprise architecture** from what was physically reproduced in the laboratory;
+- validate services at the highest practical layer instead of relying only on ping or open ports;
+- change one fault condition at a time during troubleshooting;
+- preserve a known-good baseline before introducing failures;
+- use observed evidence to isolate the failing layer before applying corrections;
+- retest the original symptom after every correction;
+- replace temporary diagnostic permissions with permanent least-privilege rules;
+- maintain rollback capability before high-impact configuration changes.
+
+This approach makes the laboratory useful not only as an implementation exercise, but also as a documented troubleshooting and change-management case study.
 
 ## Troubleshooting
 
