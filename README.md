@@ -85,6 +85,17 @@ Traffic counters provide additional evidence that the tunnels were actively tran
 > **What this proves:** IPsec negotiation succeeded and the required Security Associations were installed for the three-site topology.
 >
 > **What this does not prove by itself:** that DNS, HTTP, SMB, MariaDB or Active Directory are operational across the VPN. Those services were validated separately at the application layer.
+>
+> ## Application-Layer Validation
+
+Establishing an IPsec tunnel was not considered sufficient proof that the environment was operational. Business services were validated separately from the remote branches.
+
+### MariaDB
+
+From the Porto client, connectivity to the centralized MariaDB service in Lisbon was validated at the application layer by executing a real SQL query:
+
+```sql
+SELECT * FROM techsolutions.equipamentos;
 
 ## Key Outcomes
 
