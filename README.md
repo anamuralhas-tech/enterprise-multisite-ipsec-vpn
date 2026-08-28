@@ -208,6 +208,87 @@ Each scenario follows the same diagnostic model:
 
 **Known-good baseline → Symptom → Evidence → Hypothesis → Root cause → Correction → Retest**
 
+## Troubleshooting Evidence
+
+### Incident 1 — IPsec Authentication Failure
+
+A controlled authentication failure was introduced by configuring different pre-shared keys on the Lisbon and Porto IPsec peers.
+
+The objective was to determine whether the resulting symptoms could be distinguished from WAN reachability, firewall or Phase 2 configuration problems.
+
+#### Symptom
+
+The IPsec tunnel could not complete Phase 1 negotiation.
+
+The pfSense IPsec logs showed that the peers were able to exchange IKE traffic, but authentication failed during the IKE_AUTH stage.
+
+<p align="center">
+  <img src="assets/troubleshooting/ipsec-psk-authentication-failure.png"
+       alt="pfSense IPsec logs showing AUTHENTICATION_FAILED during IKE authentication"
+       width="95%">
+</p>
+
+The relevant log evidence included:
+
+`AUTHENTICATION_FAILED`
+
+This was important because the peers were already exchanging packets. The evidence therefore pointed to an authentication problem rather than a basic WAN connectivity failure.
+
+#### Root Cause
+
+The pre-shared key configured on the Lisbon firewall did not match the key configured on the Porto firewall.
+
+Because the PSK is used during IKE authentication, the mismatch prevented Phase 1 from completing successfully.
+
+#### Correction
+
+The pre-shared key was made identical on both IPsec peers.
+
+The key itself is intentionally excluded from this repository.
+
+#### VPN State After Correction
+
+After correcting the authentication configuration, the Lisbon-Porto tunnel successfully negotiated again.
+
+<p align="center">
+  <img src="assets/troubleshooting/ipsec-psk-recovery.png"
+       alt="pfSense IPsec tunnel recovered after correcting the pre-shared key"
+       width="95%">
+</p>
+
+The recovered state showed:
+
+- Phase 1: **Established**
+- Phase 2: **Installed**
+
+This confirmed that IKE authentication and the required traffic Security Association had been restored.
+
+#### Functional Validation
+
+Tunnel state alone was not considered sufficient evidence of recovery. Connectivity between the protected networks was tested again after the correction.
+
+<p align="center">
+  <img src="assets/troubleshooting/ipsec-psk-connectivity-validation.png"
+       alt="Successful connectivity test after recovering the IPsec tunnel"
+       width="80%">
+</p>
+
+The final test completed with **0% packet loss**, confirming that traffic between the sites was flowing again.
+
+#### Diagnostic Conclusion
+
+| Stage | Evidence |
+|---|---|
+| Initial state | Known-good VPN baseline |
+| Symptom | Phase 1 could not establish |
+| Evidence | `AUTHENTICATION_FAILED` in IPsec logs |
+| Root cause | Mismatched pre-shared key |
+| Correction | Matching PSK restored on both peers |
+| Technical validation | Phase 1 `Established`, Phase 2 `Installed` |
+| Functional validation | Inter-site connectivity restored with 0% packet loss |
+
+**Key lesson:** successful communication between the VPN peers does not prove successful IPsec authentication. IKE logs were required to distinguish a PSK mismatch from a transport or routing problem.
+
 ## Project Status
 
 **Completed laboratory implementation and validation.**
